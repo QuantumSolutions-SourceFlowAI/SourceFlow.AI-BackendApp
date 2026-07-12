@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     mistral_api_key: str = ""
     default_tenant_id: int = 1
     upload_dir: str = "./uploads"
+    allowed_origins: str = ""  # CSV of allowed CORS origins for the SPA/landing
 
     embedding_model: str = "mistral-embed"
     generation_model: str = "mistral-small-latest"

@@ -1,9 +1,11 @@
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from contexts.chatbots.interfaces.router import router as chatbots_router
 from contexts.inference.interfaces.router import router as chat_router
 from contexts.knowledge_ingestion.interfaces.router import router as documents_router
+from sfplatform.config import get_settings
 from sfplatform.middleware import TenantMiddleware, get_tenant_context
 from shared.application.tenant_context import TenantContext
 from shared.domain.errors import InvariantViolation, NotFoundError, ValidationError
@@ -12,6 +14,20 @@ from shared.domain.errors import InvariantViolation, NotFoundError, ValidationEr
 def create_app() -> FastAPI:
     app = FastAPI(title="SourceFlow.AI API")
     app.add_middleware(TenantMiddleware)
+
+    origins = [o.strip() for o in get_settings().allowed_origins.split(",") if o.strip()]
+    if origins:
+        # Added AFTER TenantMiddleware so CORS is the outermost layer (handles preflight first).
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    @app.get("/healthz")
+    def healthz() -> dict:
+        return {"status": "ok"}
 
     @app.get("/health")
     def health(ctx: TenantContext = Depends(get_tenant_context)) -> dict:
